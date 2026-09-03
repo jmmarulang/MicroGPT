@@ -12,7 +12,8 @@ torch.manual_seed(42)
 random.seed(42)
 
 # GPU Setup
-device = torch.device("xpu")
+# device = torch.device("xpu")
+device = torch.device("cpu")
 
 # Dataset
 if not os.path.exists('input.txt'):
@@ -130,19 +131,21 @@ class GPT(nn.Module):
 model = GPT()
 print(f"num params: {sum(p.numel() for p in model.parameters())}")
 
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.85, 0.99), eps=1e-8) # device?
-scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.0, total_iters=1000) # device?
+model.to(device)
+
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.85, 0.99), eps=1e-8)
+scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.0, total_iters=1000)
 
 num_steps = 1
 model.train()
-model.xpu()
+print(torch.xpu.device_count())
 for step in range(num_steps):
     doc = docs[step % len(docs)]
     tokens = [BOS] + [uchars.index(ch) for ch in doc] + [BOS]
     n = min(block_size, len(tokens) - 1)
 
-    x = torch.tensor([tokens[:n]], dtype=torch.long, device= device) # device?
-    y = torch.tensor([tokens[1:n+1]], dtype=torch.long, device= device) # device?
+    x = torch.tensor([tokens[:n]], dtype=torch.long, device= device) # change input devices
+    y = torch.tensor([tokens[1:n+1]], dtype=torch.long, device= device)
 
     logits, loss = model(x, y)
 
@@ -151,7 +154,7 @@ for step in range(num_steps):
     optimizer.step()
     scheduler.step()
 
-    print(f"step {step+1:4d} / {num_steps:4d} | loss {loss.item():.4f}", end='\r')
+    # print(f"step {step+1:4d} / {num_steps:4d} | loss {loss.item():.4f}", end='\r')
 
 
 # print("\n--- inference (new, hallucinated names) ---")
