@@ -12,7 +12,7 @@ torch.manual_seed(42)
 random.seed(42)
 
 # GPU Setup
-device = torch.device("cpu")
+device = torch.device("xpu")
 
 # Dataset
 if not os.path.exists('input.txt'):
@@ -133,15 +133,16 @@ print(f"num params: {sum(p.numel() for p in model.parameters())}")
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.85, 0.99), eps=1e-8) # device?
 scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.0, total_iters=1000) # device?
 
-num_steps = 1000
+num_steps = 1
 model.train()
+model.xpu()
 for step in range(num_steps):
     doc = docs[step % len(docs)]
-    tokens = [BOS] + [uchars.index(ch) for ch in doc] + [BOS] # device?
+    tokens = [BOS] + [uchars.index(ch) for ch in doc] + [BOS]
     n = min(block_size, len(tokens) - 1)
 
-    x = torch.tensor([tokens[:n]], dtype=torch.long)
-    y = torch.tensor([tokens[1:n+1]], dtype=torch.long)
+    x = torch.tensor([tokens[:n]], dtype=torch.long, device= device) # device?
+    y = torch.tensor([tokens[1:n+1]], dtype=torch.long, device= device) # device?
 
     logits, loss = model(x, y)
 
